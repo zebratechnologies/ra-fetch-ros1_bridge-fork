@@ -21,6 +21,7 @@
 #include "ros/node_handle.h"
 #include "ros/publisher.h"
 #include "ros/subscriber.h"
+#include "topic_tools/shape_shifter.h"
 
 // include ROS 2
 #include "rclcpp/node.hpp"
@@ -117,6 +118,16 @@ public:
   virtual
   void
   convert_2_to_1(const void * ros2_msg, void * ros1_msg) = 0;
+
+  virtual
+  bool convert_2_to_1_generic(topic_tools::ShapeShifter &shape_shifter, const rclcpp::SerializedMessage& ros2_msg)
+  {
+    return false;
+  };
+
+  virtual const char* get_ros1_md5sum() {return nullptr;}
+  virtual const char* get_ros1_data_type() {return nullptr;}
+  virtual const char* get_ros1_message_definition() {return nullptr;}
 };
 
 class ServiceFactoryInterface

@@ -252,6 +252,11 @@ protected:
     ros1_pub.publish(ros1_msg);
   }
 
+  const char* get_ros1_md5sum() override
+  {
+    return ros::message_traits::MD5Sum<ROS1_T>::value();
+  }
+
 public:
   // since convert functions call each other for sub messages they must be public
   // defined outside of the class

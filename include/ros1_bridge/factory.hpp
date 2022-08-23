@@ -29,6 +29,7 @@
 #include "rcutils/logging_macros.h"
 
 #include "ros1_bridge/factory_interface.hpp"
+#include "ros1_bridge/shape_shifter_access.hpp"
 
 namespace ros1_bridge
 {
@@ -41,7 +42,14 @@ public:
     const std::string & ros1_type_name, const std::string & ros2_type_name)
   : ros1_type_name_(ros1_type_name),
     ros2_type_name_(ros2_type_name)
-  {}
+  {
+    ts_lib_ = rclcpp::get_typesupport_library(ros2_type_name, "rosidl_typesupport_cpp");
+    if (static_cast<bool>(ts_lib_)) {
+      type_support_ = rclcpp::get_typesupport_handle(
+        ros2_type_name, "rosidl_typesupport_cpp",
+        *ts_lib_);
+    }
+  }
 
   ros::Publisher
   create_ros1_publisher(
@@ -149,14 +157,14 @@ public:
       topic_name, qos, callback, options);
   }
 
-  void convert_1_to_2(const void * ros1_msg, void * ros2_msg) override
+  void convert_1_to_2(const void * ros1_msg, void * ros2_msg) const override
   {
     auto typed_ros1_msg = static_cast<const ROS1_T *>(ros1_msg);
     auto typed_ros2_msg = static_cast<ROS2_T *>(ros2_msg);
     convert_1_to_2(*typed_ros1_msg, *typed_ros2_msg);
   }
 
-  void convert_2_to_1(const void * ros2_msg, void * ros1_msg) override
+  void convert_2_to_1(const void * ros2_msg, void * ros1_msg) const override
   {
     auto typed_ros2_msg = static_cast<const ROS2_T *>(ros2_msg);
     auto typed_ros1_msg = static_cast<ROS1_T *>(ros1_msg);
@@ -266,8 +274,97 @@ public:
     const ROS2_T & ros2_msg,
     ROS1_T & ros1_msg);
 
+
+  const char * get_ros1_md5sum() const override
+  {
+    return ros::message_traits::MD5Sum<ROS1_T>::value();
+  }
+
+  const char * get_ros1_data_type() const override
+  {
+    return ros::message_traits::DataType<ROS1_T>::value();
+  }
+
+  const char * get_ros1_message_definition() const override
+  {
+    return ros::message_traits::Definition<ROS1_T>::value();
+  }
+
+  bool convert_2_to_1_generic(
+    const rclcpp::SerializedMessage & ros2_msg,
+    topic_tools::ShapeShifter & shape_shifter,
+    bool latched) const override
+  {
+    if (type_support_ == nullptr) {
+      return false;
+    }
+
+    // Deserialize to a ROS2 message
+    ROS2_T ros2_typed_msg;
+    if (rmw_deserialize(
+        &ros2_msg.get_rcl_serialized_message(), type_support_,
+        &ros2_typed_msg) != RMW_RET_OK)
+    {
+      return false;
+    }
+
+    // Call convert_2_to_1
+    ROS1_T ros1_typed_msg;
+    convert_2_to_1(&ros2_typed_msg, &ros1_typed_msg);
+
+    // Fill in ShapeShifter md5, msg_def, std
+    shape_shifter.morph(
+      get_ros1_md5sum(), get_ros1_data_type(),
+      get_ros1_message_definition(), latched == true ? "1" : "0");
+
+    // Serialize the ROS1 message into a ShapeShifter
+    uint32_t length = ros::serialization::serializationLength(ros1_typed_msg);
+    std::vector<uint8_t> buffer(length);
+    ros::serialization::OStream out_stream(buffer.data(), length);
+    ros::serialization::serialize(out_stream, ros1_typed_msg);
+    ros::serialization::IStream in_stream(buffer.data(), length);
+    shape_shifter.read(in_stream);
+
+    return true;
+  }
+
+  bool convert_1_to_2_generic(
+    const topic_tools::ShapeShifter & shape_shifter,
+    rclcpp::SerializedMessage & ros2_msg) const override
+  {
+    if (type_support_ == nullptr) {
+      return false;
+    }
+
+    // Deserialize to a ROS1 message
+    ROS1_T ros1_typed_msg;
+    // Both IStream and OStream inherits their functionality from Stream
+    // So IStream needs a non-const data reference to data
+    // However deserialization function probably shouldn't modify data they are serializing from
+    uint8_t * shape_shifter_data = const_cast<uint8_t *>(get_data(shape_shifter));
+    ros::serialization::IStream in_stream(shape_shifter_data, shape_shifter.size());
+    ros::serialization::deserialize(in_stream, ros1_typed_msg);
+
+    // Call convert_1_to_2
+    ROS2_T ros2_typed_msg;
+    convert_1_to_2(&ros1_typed_msg, &ros2_typed_msg);
+
+    // Serialize ROS2 message
+    if (rmw_serialize(
+        &ros2_typed_msg, type_support_,
+        &ros2_msg.get_rcl_serialized_message()) != RMW_RET_OK)
+    {
+      return false;
+    }
+
+    return true;
+  }
+
   std::string ros1_type_name_;
   std::string ros2_type_name_;
+
+  std::shared_ptr<rcpputils::SharedLibrary> ts_lib_;
+  const rosidl_message_type_support_t * type_support_ = nullptr;
 };
 
 template<class ROS1_T, class ROS2_T>

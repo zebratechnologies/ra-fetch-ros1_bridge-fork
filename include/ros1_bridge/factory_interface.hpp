@@ -21,6 +21,7 @@
 #include "ros/node_handle.h"
 #include "ros/publisher.h"
 #include "ros/subscriber.h"
+#include "topic_tools/shape_shifter.h"
 
 // include ROS 2
 #include "rclcpp/node.hpp"
@@ -112,11 +113,25 @@ public:
 
   virtual
   void
-  convert_1_to_2(const void * ros1_msg, void * ros2_msg) = 0;
+  convert_1_to_2(const void * ros1_msg, void * ros2_msg) const = 0;
 
   virtual
   void
-  convert_2_to_1(const void * ros2_msg, void * ros1_msg) = 0;
+  convert_2_to_1(const void * ros2_msg, void * ros1_msg) const = 0;
+
+  virtual
+  bool convert_2_to_1_generic(
+    const rclcpp::SerializedMessage & ros2_msg,
+    topic_tools::ShapeShifter & shape_shifter, bool latched) const = 0;
+
+  virtual
+  bool convert_1_to_2_generic(
+    const topic_tools::ShapeShifter & shape_shifter,
+    rclcpp::SerializedMessage & ros2_msg) const = 0;
+
+  virtual const char * get_ros1_md5sum() const = 0;
+  virtual const char * get_ros1_data_type() const = 0;
+  virtual const char * get_ros1_message_definition() const = 0;
 };
 
 class ServiceFactoryInterface

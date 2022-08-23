@@ -43,6 +43,7 @@ if(NOT ros1_roscpp_FOUND)
 endif()
 
 find_ros1_package(std_msgs REQUIRED)
+find_ros1_package(topic_tools REQUIRED)
 
 # Dependency that we should only look for if ROS 1 is installed (it's not present on a ROS 2
 # system; see https://github.com/ros2/ros1_bridge/pull/331#issuecomment-1188111510)
@@ -80,6 +81,30 @@ if(BUILD_TESTING)
     endif()
     set(TEST_ROS1_BRIDGE TRUE)
   endif()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(geometry_msgs REQUIRED)
+  find_package(std_msgs REQUIRED)
+  find_package(sensor_msgs REQUIRED)
+  find_ros1_package(geometry_msgs)
+  find_ros1_package(std_msgs)
+  find_ros1_package(sensor_msgs)
+  if(ros1_geometry_msgs_FOUND AND ros1_sensor_msgs_FOUND AND ros1_std_msgs_FOUND)
+    ament_add_gtest(test_convert_generic test/test_convert_generic.cpp)
+    ament_target_dependencies(test_convert_generic
+      "ros1_roscpp"
+      "ros1_topic_tools"
+      "ros1_sensor_msgs"
+      "ros1_std_msgs"
+      "ros1_geometry_msgs"
+      "sensor_msgs"
+      "std_msgs"
+      "geometry_msgs"
+      "rclcpp"
+    )
+    target_link_libraries(test_convert_generic ${PROJECT_NAME})
+  endif()
+
 endif()
 
 ament_export_include_directories(include)
@@ -185,6 +210,7 @@ add_library(${PROJECT_NAME} SHARED
   "src/builtin_interfaces_factories.cpp"
   "src/convert_builtin_interfaces.cpp"
   "src/bridge.cpp"
+  "src/shape_shifter_access.cpp"
   ${generated_files})
 ament_target_dependencies(${PROJECT_NAME}
   ${prefixed_ros1_message_packages}

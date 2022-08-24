@@ -41,7 +41,13 @@ public:
     const std::string & ros1_type_name, const std::string & ros2_type_name)
   : ros1_type_name_(ros1_type_name),
     ros2_type_name_(ros2_type_name)
-  {}
+  {
+    ts_lib_ = rclcpp::get_typesupport_library(ros2_type_name, "rosidl_typesupport_cpp");
+    if (static_cast<bool>(ts_lib_))
+    {
+      type_support_ = rclcpp::get_typesupport_handle(ros2_type_name, "rosidl_typesupport_cpp", *ts_lib_);
+    }
+  }
 
   ros::Publisher
   create_ros1_publisher(
@@ -267,6 +273,40 @@ protected:
     return ros::message_traits::Definition<ROS1_T>::value();
   }
 
+  bool convert_2_to_1_generic(const rclcpp::SerializedMessage& ros2_msg,
+                              topic_tools::ShapeShifter &shape_shifter,
+                              bool latched) override
+  {
+    if (type_support_ == nullptr)
+    {
+      return false;
+    }
+
+    //Deserialize to a ROS2 message
+    ROS2_T ros2_typed_msg;
+    if (rmw_deserialize(&ros2_msg.get_rcl_serialized_message(), type_support_, &ros2_typed_msg) != RMW_RET_OK)
+    {
+      return false;
+    }
+
+    //Call convert_2_to_1
+    ROS1_T ros1_typed_msg;
+    convert_2_to_1(&ros2_typed_msg, &ros1_typed_msg);
+
+    //Fill in ShapeShifter md5, msg_def, std
+    shape_shifter.morph(get_ros1_md5sum(),  get_ros1_data_type(), get_ros1_message_definition(), latched == true ? "1" : "0");
+
+    //Serialize the ROS1 message into a ShapeShifter
+    uint32_t length = ros::serialization::serializationLength(ros1_typed_msg);
+    std::vector<uint8_t> buffer(length);
+    ros::serialization::OStream out_stream(buffer.data(), length);
+    ros::serialization::serialize(out_stream, ros1_typed_msg);
+    ros::serialization::IStream in_stream(buffer.data(), length);
+    shape_shifter.read(in_stream);
+
+    return true;
+  };
+
 public:
   // since convert functions call each other for sub messages they must be public
   // defined outside of the class
@@ -283,6 +323,9 @@ public:
 
   std::string ros1_type_name_;
   std::string ros2_type_name_;
+
+  std::shared_ptr<rcpputils::SharedLibrary> ts_lib_;
+  const rosidl_message_type_support_t* type_support_ = nullptr;
 };
 
 template<class ROS1_T, class ROS2_T>

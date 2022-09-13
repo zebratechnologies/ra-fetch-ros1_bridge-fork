@@ -258,24 +258,24 @@ protected:
     ros1_pub.publish(ros1_msg);
   }
 
-  const char* get_ros1_md5sum() override
+  const char* get_ros1_md5sum() const override
   {
     return ros::message_traits::MD5Sum<ROS1_T>::value();
   }
 
-  const char* get_ros1_data_type() override
+  const char* get_ros1_data_type() const override
   {
     return ros::message_traits::DataType<ROS1_T>::value();
   }
 
-  const char* get_ros1_message_definition() override
+  const char* get_ros1_message_definition() const override
   {
     return ros::message_traits::Definition<ROS1_T>::value();
   }
 
   bool convert_2_to_1_generic(const rclcpp::SerializedMessage& ros2_msg,
                               topic_tools::ShapeShifter &shape_shifter,
-                              bool latched) override
+                              bool latched) const override
   {
     if (type_support_ == nullptr)
     {

@@ -347,13 +347,13 @@ namespace ros1_bridge
 {
 
 template<>
-template<typename STREAM_T>
+template<typename STREAM_T, typename ROS2_MSG_T>
 void
 Factory<
   @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
   @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
 >::msg_2_to_1_stream(STREAM_T& stream,
-                     const @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
+                     ROS2_MSG_T& ros2_msg)
 {
 @[  if not m.fields_2_to_1]@
   // No m.fields_1_to_2
@@ -396,8 +396,8 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
   // write primitive array elements
   {
     for (
-      auto ros2_it = ros2_msg.@(ros2_field_selection).cbegin();
-      ros2_it != ros2_msg.@(ros2_field_selection).cend();
+      auto ros2_it = ros2_msg.@(ros2_field_selection).begin();
+      ros2_it != ros2_msg.@(ros2_field_selection).end();
       ++ros2_it
     )
     {
@@ -418,8 +418,8 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
   // write element wise since the type is different
   {
     for (
-      auto ros2_it = ros2_msg.@(ros2_field_selection).cbegin();
-      ros2_it != ros2_msg.@(ros2_field_selection).cend();
+      auto ros2_it = ros2_msg.@(ros2_field_selection).begin();
+      ros2_it != ros2_msg.@(ros2_field_selection).end();
       ++ros2_it
     )
     {
@@ -450,6 +450,32 @@ Factory<
 {
   msg_2_to_1_stream(out_stream, ros2_msg);
 }
+
+
+template<>
+void
+Factory<
+  @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
+  @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+>::read_2_to_1_stream(ros::serialization::IStream& in_stream,
+                      @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
+{
+  msg_2_to_1_stream(in_stream, ros2_msg);
+}
+
+/*
+template<>
+uint32_t
+Factory<
+  @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
+  @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+>::length_2_to_1_stream(const @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
+{
+  ros::serialization::LStream len_stream;
+  msg_2_to_1_stream(len_stream, ros2_msg);
+  return len_stream.getLength();
+}
+*/
 
 }  // namespace ros1_bridge
 

@@ -34,17 +34,24 @@ convert_1_to_2(
   const ros::Duration & ros1_type,
   builtin_interfaces::msg::Duration & ros2_msg);
 
-template<typename STREAM_T>
-void
-msg_2_to_1_stream(
-  STREAM_T& stream,
-  const builtin_interfaces::msg::Duration& msg);
-
 template<>
 void
 convert_2_to_1(
   const builtin_interfaces::msg::Duration & ros2_msg,
   ros::Duration & ros1_type);
+
+template<typename STREAM_T>
+void
+msg_2_to_1_stream(
+  STREAM_T & stream,
+  const builtin_interfaces::msg::Duration & msg);
+
+template<typename STREAM_T>
+void
+msg_2_to_1_stream(
+  STREAM_T & stream,
+  builtin_interfaces::msg::Duration & msg);
+
 
 template<>
 void
@@ -61,8 +68,14 @@ convert_2_to_1(
 template<typename STREAM_T>
 void
 msg_2_to_1_stream(
-  STREAM_T& stream,
-  const builtin_interfaces::msg::Time& msg);
+  STREAM_T & stream,
+  const builtin_interfaces::msg::Time & msg);
+
+template<typename STREAM_T>
+void
+msg_2_to_1_stream(
+  STREAM_T & stream,
+  builtin_interfaces::msg::Time & msg);
 
 }  // namespace ros1_bridge
 

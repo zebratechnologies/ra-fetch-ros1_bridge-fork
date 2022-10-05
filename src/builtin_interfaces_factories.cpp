@@ -104,10 +104,23 @@ Factory<
   std_msgs::Duration,
   builtin_interfaces::msg::Duration
 >::msg_2_to_1_stream(
-  ros::serialization::OStream& stream,
-  const builtin_interfaces::msg::Duration& msg)
+  ros::serialization::OStream & stream,
+  const builtin_interfaces::msg::Duration & ros2_msg)
 {
-  ros1_bridge::msg_2_to_1_stream(stream, msg);
+  ros1_bridge::msg_2_to_1_stream(stream, ros2_msg);
+}
+
+template<>
+template<>
+void
+Factory<
+  std_msgs::Duration,
+  builtin_interfaces::msg::Duration
+>::msg_2_to_1_stream(
+  ros::serialization::IStream & stream,
+  builtin_interfaces::msg::Duration & ros2_msg)
+{
+  ros1_bridge::msg_2_to_1_stream(stream, ros2_msg);
 }
 
 template<>
@@ -156,10 +169,23 @@ Factory<
   std_msgs::Time,
   builtin_interfaces::msg::Time
 >::msg_2_to_1_stream(
-  ros::serialization::OStream& stream,
-  const builtin_interfaces::msg::Time& msg)
+  ros::serialization::OStream & stream,
+  const builtin_interfaces::msg::Time & ros2_msg)
 {
-  ros1_bridge::msg_2_to_1_stream(stream, msg);
+  ros1_bridge::msg_2_to_1_stream(stream, ros2_msg);
+}
+
+template<>
+template<>
+void
+Factory<
+  std_msgs::Time,
+  builtin_interfaces::msg::Time
+>::msg_2_to_1_stream(
+  ros::serialization::IStream & stream,
+  builtin_interfaces::msg::Time & ros2_msg)
+{
+  ros1_bridge::msg_2_to_1_stream(stream, ros2_msg);
 }
 
 }  // namespace ros1_bridge

@@ -24,6 +24,7 @@ from rosidl_parser.definition import AbstractNestedType
 from rosidl_parser.definition import AbstractSequence
 from rosidl_parser.definition import BoundedSequence
 from rosidl_parser.definition import NamespacedType
+from rosidl_parser.definition import UnboundedString
 }@
 #include "@(ros2_package_name)_factories.hpp"
 
@@ -386,8 +387,8 @@ Factory<
                        const @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
 {
 @[  if not m.fields_2_to_1]@
-  (void)ros2_msg;
-  (void)ros1_msg;
+  // No m.fields_1_to_2
+  // TODO : throw exception?
 @[  end if]@
 @[  for ros2_fields, ros1_fields in m.fields_2_to_1.items()]@
 @{
@@ -420,16 +421,37 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
   // dynamically sized sequence
 @[      else]@
   // statically sized array
-  static_assert(
-    (ros1_msg.@(ros1_field_selection).static_size) >= std::tuple_size<decltype(ros2_msg.@(ros2_field_selection))>::value,
-    "destination array not large enough for source array"
-  );
+  // TODO validate ROS1 and ROS2 field sizes match?
 @[      end if]@
 @[      if not isinstance(ros2_fields[-1].type.value_type, NamespacedType)]@
   // convert primitive array elements
-  // TODO
+  {
+    for (
+      auto ros2_it = ros2_msg.@(ros2_field_selection).cbegin();
+      ros2_it != ros2_msg.@(ros2_field_selection).cend();
+      ++ros2_it
+    )
+    {
+      // convert sub message element
+@[        if isinstance(ros2_fields[-1].type.value_type, UnboundedString)]@
+      out_stream.next(*ros2_it);
+@[        elif ros2_fields[-1].type.value_type.typename == 'builtin_interfaces']@
+      // ROS2 fields.type.value_type.typename @(ros2_fields[-1].type.value_type.typename)
+      ros1_bridge::write_2_to_1_stream(out_stream, *ros2_it);
+@[        else]@
+      // ROS2 fields.type.value_type.typename @(ros2_fields[-1].type.value_type.typename)
+      out_stream.next(*ros2_it);
+@[        end if]@
+    }
+  }
+  // ROS1 fields @(dir(ros1_fields[-1]))
+  // ROS2 fields @(dir(ros2_fields[-1]))
+  // ROS2 fields.type @(dir(ros2_fields[-1].type))
+  // ROS2 fields.type @(dir(ros2_fields[-1].type))
+  // ROS2 fields.type.value_type @(ros2_fields[-1].type.value_type)
+  // ROS2 fields.type.value_type @(dir(ros2_fields[-1].type.value_type))
 @[      else]@
-  // copy element wise since the type is different
+  // write element wise since the type is different
   {
     for (
       auto ros2_it = ros2_msg.@(ros2_field_selection).cbegin();

@@ -401,22 +401,22 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
       "messages not using the '<pkg_name>, msg, <type_name>' triplet are not supported"
 }
 @[    if not isinstance(ros2_fields[-1].type, AbstractNestedType)]@
-  // convert non-array field
+  // write non-array field
 @[      if not isinstance(ros2_fields[-1].type, NamespacedType)]@
-  // convert primitive field
+  // write primitive field
   out_stream.next(ros2_msg.@(ros2_field_selection));
 @[      elif ros2_fields[-1].type.namespaces[0] == 'builtin_interfaces']@
-  // convert builtin field
+  // write builtin field
   ros1_bridge::write_2_to_1_stream(out_stream, ros2_msg.@(ros2_field_selection));
 @[      else]@
-  // convert sub message field
+  // write sub message field
   Factory<
     @(ros1_fields[-1].pkg_name)::@(ros1_fields[-1].msg_name),
     @(ros2_fields[-1].type.namespaces[0])::msg::@(ros2_fields[-1].type.name)
   >::write_2_to_1_stream(out_stream, ros2_msg.@(ros2_field_selection));
 @[      end if]@
 @[    else]@
-  // convert array or sequence field
+  // write array or sequence field
 @[      if isinstance(ros2_fields[-1].type, AbstractSequence)]@
   // dynamically sized sequence
 @[      else]@
@@ -424,7 +424,7 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
   // TODO validate ROS1 and ROS2 field sizes match?
 @[      end if]@
 @[      if not isinstance(ros2_fields[-1].type.value_type, NamespacedType)]@
-  // convert primitive array elements
+  // write primitive array elements
   {
     for (
       auto ros2_it = ros2_msg.@(ros2_field_selection).cbegin();
@@ -432,24 +432,19 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
       ++ros2_it
     )
     {
-      // convert sub message element
+      // write sub message element
 @[        if isinstance(ros2_fields[-1].type.value_type, UnboundedString)]@
+      // write UnboundedString
       out_stream.next(*ros2_it);
 @[        elif ros2_fields[-1].type.value_type.typename == 'builtin_interfaces']@
-      // ROS2 fields.type.value_type.typename @(ros2_fields[-1].type.value_type.typename)
+      // write sub message element
       ros1_bridge::write_2_to_1_stream(out_stream, *ros2_it);
 @[        else]@
-      // ROS2 fields.type.value_type.typename @(ros2_fields[-1].type.value_type.typename)
+      // write primative type
       out_stream.next(*ros2_it);
 @[        end if]@
     }
   }
-  // ROS1 fields @(dir(ros1_fields[-1]))
-  // ROS2 fields @(dir(ros2_fields[-1]))
-  // ROS2 fields.type @(dir(ros2_fields[-1].type))
-  // ROS2 fields.type @(dir(ros2_fields[-1].type))
-  // ROS2 fields.type.value_type @(ros2_fields[-1].type.value_type)
-  // ROS2 fields.type.value_type @(dir(ros2_fields[-1].type.value_type))
 @[      else]@
   // write element wise since the type is different
   {
@@ -459,7 +454,7 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
       ++ros2_it
     )
     {
-      // convert sub message element
+      // write sub message element
 @[        if ros2_fields[-1].type.value_type.namespaces[0] == 'builtin_interfaces']@
       ros1_bridge::write_2_to_1_stream(out_stream, *ros2_it);
 @[        else]@

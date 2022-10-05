@@ -30,6 +30,9 @@ convert_2_to_1(
   const ROS2_T & ros2_msg,
   ROS1_T & ros1_msg);
 
+template<typename ROS1_T, typename ROS2_T>
+struct CustomSerializer;
+
 }  // namespace ros1_bridge
 
 #endif  // ROS1_BRIDGE__CONVERT_DECL_HPP_

@@ -44,6 +44,10 @@ from rosidl_parser.definition import NamespacedType
 #include <@(service["ros2_package"])/srv/@(camel_case_to_lower_case_underscore(service["ros2_name"])).hpp>
 @[end for]@
 
+// For custom serialization / deserialization
+#include <ros/message_traits.h>
+#include <ros/serialization.h>
+
 namespace ros1_bridge
 {
 
@@ -332,3 +336,41 @@ void ServiceFactory<
 @[  end for]@
 @[end for]@
 }  // namespace ros1_bridge
+
+// deserialization functions
+@[for m in mapped_msgs]@
+
+namespace ros1_bridge
+{
+template<>
+struct CustomSerializer<
+  @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
+  @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+  > : public @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+{ };
+}  // namespace ros1_bridge
+
+
+namespace ros
+{
+namespace message_traits
+{
+
+template<> struct IsFixedSize<
+  ::ros1_bridge::CustomSerializer<
+    @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
+    @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+    >
+  > : public IsFixedSize<@(m.ros1_msg.package_name)::@(m.ros1_msg.message_name)> {};
+
+template<> struct IsSimple<
+  ::ros1_bridge::CustomSerializer<
+    @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
+    @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+    >
+  > : public IsSimple<@(m.ros1_msg.package_name)::@(m.ros1_msg.message_name)> {};
+
+}  // namespace message_traits
+}  // namespace ros
+
+@[end for]@

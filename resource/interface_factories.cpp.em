@@ -417,9 +417,7 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
 @[    else]@
   // convert array or sequence field
 @[      if isinstance(ros2_fields[-1].type, AbstractSequence)]@
-  // dynamically sized sequence, ensure destination vector size is large enough
-  // resize ros1 field to match the ros2 field
-  // TODO ros1_msg.@(ros1_field_selection).resize(ros2_msg.@(ros2_field_selection).size());
+  // dynamically sized sequence
 @[      else]@
   // statically sized array
   static_assert(
@@ -429,10 +427,7 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
 @[      end if]@
 @[      if not isinstance(ros2_fields[-1].type.value_type, NamespacedType)]@
   // convert primitive array elements
-  std::copy(
-    ros2_msg.@(ros2_field_selection).begin(),
-    ros2_msg.@(ros2_field_selection).end(),
-    ros1_msg.@(ros1_field_selection).begin());
+  // TODO
 @[      else]@
   // copy element wise since the type is different
   {

@@ -441,15 +441,14 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
 
 
 template<>
-template<STREAM_T>
 void
 Factory<
   @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
   @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
->::write_2_to_1_stream(STREAM_T& out_stream,
+>::write_2_to_1_stream(ros::serialization::OStream& out_stream,
                        const @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
 {
-  msg_2_to_1_stream(out_stream, msg);
+  msg_2_to_1_stream(out_stream, ros2_msg);
 }
 
 }  // namespace ros1_bridge

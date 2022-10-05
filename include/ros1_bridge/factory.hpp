@@ -49,6 +49,8 @@ public:
     }
   }
 
+  static bool customIsFixed();
+
   ros::Publisher
   create_ros1_publisher(
     ros::NodeHandle node,

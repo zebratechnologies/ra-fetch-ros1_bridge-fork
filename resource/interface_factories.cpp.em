@@ -373,4 +373,25 @@ template<> struct IsSimple<
 }  // namespace message_traits
 }  // namespace ros
 
+
+namespace ros1_bridge
+{
+
+template<>
+bool
+Factory<
+  @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
+  @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+>::customIsFixed()
+{
+  using Type = ::ros1_bridge::CustomSerializer<
+    @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
+    @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+    >;
+  return ros::message_traits::IsFixedSize<Type>::value;
+}
+
+}  // namespace ros1_bridge
+
+
 @[end for]@

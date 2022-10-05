@@ -49,9 +49,16 @@ public:
     }
   }
 
-  static bool customIsFixed();
   static void write_2_to_1_stream(ros::serialization::OStream& out_stream, const ROS2_T& msg);
 
+  template<typename STREAM_T>
+  static void msg_2_to_1_stream(STREAM_T&, const ROS2_T& msg);
+
+  /*
+  template<>
+  static void msg_2_to_1_stream(ros::serialization::OStream& stream, const ROS2_T& msg);
+  */
+  
   ros::Publisher
   create_ros1_publisher(
     ros::NodeHandle node,

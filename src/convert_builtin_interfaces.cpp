@@ -14,6 +14,8 @@
 
 #include "ros1_bridge/convert_builtin_interfaces.hpp"
 
+#include "ros/serialization.h"
+
 namespace ros1_bridge
 {
 
@@ -39,12 +41,12 @@ convert_2_to_1(
 
 template<>
 void
-write_2_to_1_stream(
-  ros::serialization::OStream& out_stream,
+msg_2_to_1_stream(
+  ros::serialization::OStream& stream,
   const builtin_interfaces::msg::Duration& msg)
 {
-  out_stream.next(msg.sec);
-  out_stream.next(msg.nanosec);
+  stream.next(msg.sec);
+  stream.next(msg.nanosec);
 }
 
 template<>
@@ -69,12 +71,12 @@ convert_2_to_1(
 
 template<>
 void
-write_2_to_1_stream(
-  ros::serialization::OStream& out_stream,
+msg_2_to_1_stream(
+  ros::serialization::OStream& stream,
   const builtin_interfaces::msg::Time& msg)
 {
-  out_stream.next(msg.sec);
-  out_stream.next(msg.nanosec);
+  stream.next(msg.sec);
+  stream.next(msg.nanosec);
 }
 
 

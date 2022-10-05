@@ -338,53 +338,22 @@ void ServiceFactory<
 @[end for]@
 }  // namespace ros1_bridge
 
-// deserialization functions
+
+
+// ROS1 serialization functions
 @[for m in mapped_msgs]@
 
 namespace ros1_bridge
 {
-template<>
-struct CustomSerializer<
-  @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
-  @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
-  > : public @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
-{ };
-}  // namespace ros1_bridge
-
-
-namespace ros
-{
-namespace message_traits
-{
-
-template<> struct IsFixedSize<
-  ::ros1_bridge::CustomSerializer<
-    @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
-    @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
-    >
-  > : public IsFixedSize<@(m.ros1_msg.package_name)::@(m.ros1_msg.message_name)> {};
-
-template<> struct IsSimple<
-  ::ros1_bridge::CustomSerializer<
-    @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
-    @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
-    >
-  > : public IsSimple<@(m.ros1_msg.package_name)::@(m.ros1_msg.message_name)> {};
-
-}  // namespace message_traits
-}  // namespace ros
-
-
-namespace ros1_bridge
-{
 
 template<>
+template<typename STREAM_T>
 void
 Factory<
   @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
   @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
->::write_2_to_1_stream(ros::serialization::OStream& out_stream,
-                       const @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
+>::msg_2_to_1_stream(STREAM_T& stream,
+                     const @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
 {
 @[  if not m.fields_2_to_1]@
   // No m.fields_1_to_2
@@ -404,16 +373,16 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
   // write non-array field
 @[      if not isinstance(ros2_fields[-1].type, NamespacedType)]@
   // write primitive field
-  out_stream.next(ros2_msg.@(ros2_field_selection));
+  stream.next(ros2_msg.@(ros2_field_selection));
 @[      elif ros2_fields[-1].type.namespaces[0] == 'builtin_interfaces']@
   // write builtin field
-  ros1_bridge::write_2_to_1_stream(out_stream, ros2_msg.@(ros2_field_selection));
+  ros1_bridge::msg_2_to_1_stream(stream, ros2_msg.@(ros2_field_selection));
 @[      else]@
   // write sub message field
   Factory<
     @(ros1_fields[-1].pkg_name)::@(ros1_fields[-1].msg_name),
     @(ros2_fields[-1].type.namespaces[0])::msg::@(ros2_fields[-1].type.name)
-  >::write_2_to_1_stream(out_stream, ros2_msg.@(ros2_field_selection));
+  >::msg_2_to_1_stream(stream, ros2_msg.@(ros2_field_selection));
 @[      end if]@
 @[    else]@
   // write array or sequence field
@@ -435,13 +404,13 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
       // write sub message element
 @[        if isinstance(ros2_fields[-1].type.value_type, UnboundedString)]@
       // write UnboundedString
-      out_stream.next(*ros2_it);
+      stream.next(*ros2_it);
 @[        elif ros2_fields[-1].type.value_type.typename == 'builtin_interfaces']@
       // write sub message element
-      ros1_bridge::write_2_to_1_stream(out_stream, *ros2_it);
+      ros1_bridge::msg_2_to_1_stream(stream, *ros2_it);
 @[        else]@
       // write primative type
-      out_stream.next(*ros2_it);
+      stream.next(*ros2_it);
 @[        end if]@
     }
   }
@@ -456,12 +425,12 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
     {
       // write sub message element
 @[        if ros2_fields[-1].type.value_type.namespaces[0] == 'builtin_interfaces']@
-      ros1_bridge::write_2_to_1_stream(out_stream, *ros2_it);
+      ros1_bridge::msg_2_to_1_stream(stream, *ros2_it);
 @[        else]@
       Factory<
         @(ros1_fields[-1].pkg_name)::@(ros1_fields[-1].msg_name),
         @(ros2_fields[-1].type.value_type.namespaces[0])::msg::@(ros2_fields[-1].type.value_type.name)
-      >::write_2_to_1_stream(out_stream, *ros2_it);
+      >::msg_2_to_1_stream(stream, *ros2_it);
 @[        end if]@
     }
   }
@@ -470,18 +439,17 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
 @[  end for]@
 }
 
+
 template<>
-bool
+template<STREAM_T>
+void
 Factory<
   @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
   @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
->::customIsFixed()
+>::write_2_to_1_stream(STREAM_T& out_stream,
+                       const @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
 {
-  using Type = ::ros1_bridge::CustomSerializer<
-    @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
-    @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
-    >;
-  return ros::message_traits::IsFixedSize<Type>::value;
+  msg_2_to_1_stream(out_stream, msg);
 }
 
 }  // namespace ros1_bridge

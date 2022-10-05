@@ -83,6 +83,18 @@ Factory<
 template<>
 void
 Factory<
+  std_msgs::Duration,
+  builtin_interfaces::msg::Duration
+>::write_2_to_1_stream(
+  ros::serialization::OStream& out_stream,
+  const builtin_interfaces::msg::Duration& msg)
+{
+  ros1_bridge::write_2_to_1_stream(out_stream, msg);
+}
+
+template<>
+void
+Factory<
   std_msgs::Time,
   builtin_interfaces::msg::Time
 >::convert_1_to_2(
@@ -102,6 +114,18 @@ Factory<
   std_msgs::Time & ros1_msg)
 {
   ros1_bridge::convert_2_to_1(ros2_msg, ros1_msg.data);
+}
+
+template<>
+void
+Factory<
+  std_msgs::Time,
+  builtin_interfaces::msg::Time
+>::write_2_to_1_stream(
+  ros::serialization::OStream& out_stream,
+  const builtin_interfaces::msg::Time& msg)
+{
+  ros1_bridge::write_2_to_1_stream(out_stream, msg);
 }
 
 }  // namespace ros1_bridge

@@ -50,6 +50,7 @@ public:
   }
 
   static bool customIsFixed();
+  static void write_2_to_1_stream(ros::serialization::OStream& out_stream, const ROS2_T& msg);
 
   ros::Publisher
   create_ros1_publisher(

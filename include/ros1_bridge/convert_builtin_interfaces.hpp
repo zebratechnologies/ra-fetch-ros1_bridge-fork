@@ -36,6 +36,12 @@ convert_1_to_2(
 
 template<>
 void
+write_2_to_1_stream(
+  ros::serialization::OStream& out_stream,
+  const builtin_interfaces::msg::Duration& msg);
+
+template<>
+void
 convert_2_to_1(
   const builtin_interfaces::msg::Duration & ros2_msg,
   ros::Duration & ros1_type);
@@ -51,6 +57,12 @@ void
 convert_2_to_1(
   const builtin_interfaces::msg::Time & ros2_msg,
   ros::Time & ros1_type);
+
+template<>
+void
+write_2_to_1_stream(
+  ros::serialization::OStream& out_stream,
+  const builtin_interfaces::msg::Time& msg);
 
 }  // namespace ros1_bridge
 

@@ -37,6 +37,15 @@ convert_2_to_1(
   ros1_type.nsec = ros2_msg.nanosec;
 }
 
+template<>
+void
+write_2_to_1_stream(
+  ros::serialization::OStream& out_stream,
+  const builtin_interfaces::msg::Duration& msg)
+{
+  out_stream.next(msg.sec);
+  out_stream.next(msg.nanosec);
+}
 
 template<>
 void
@@ -57,5 +66,16 @@ convert_2_to_1(
   ros1_type.sec = ros2_msg.sec;
   ros1_type.nsec = ros2_msg.nanosec;
 }
+
+template<>
+void
+write_2_to_1_stream(
+  ros::serialization::OStream& out_stream,
+  const builtin_interfaces::msg::Time& msg)
+{
+  out_stream.next(msg.sec);
+  out_stream.next(msg.nanosec);
+}
+
 
 }  // namespace ros1_bridge

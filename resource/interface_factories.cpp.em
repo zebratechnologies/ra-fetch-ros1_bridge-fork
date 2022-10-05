@@ -378,6 +378,87 @@ namespace ros1_bridge
 {
 
 template<>
+void
+Factory<
+  @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),
+  @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)
+>::write_2_to_1_stream(ros::serialization::OStream& out_stream,
+                       const @(m.ros2_msg.package_name)::msg::@(m.ros2_msg.message_name)& ros2_msg)
+{
+@[  if not m.fields_2_to_1]@
+  (void)ros2_msg;
+  (void)ros1_msg;
+@[  end if]@
+@[  for ros2_fields, ros1_fields in m.fields_2_to_1.items()]@
+@{
+ros2_field_selection = '.'.join((str(field.name) for field in ros2_fields))
+ros1_field_selection = '.'.join((str(field.name) for field in ros1_fields))
+
+if isinstance(ros2_fields[-1].type, NamespacedType):
+    namespaces = ros2_fields[-1].type.namespaces
+    assert len(namespaces) == 2 and namespaces[1] == 'msg', \
+      "messages not using the '<pkg_name>, msg, <type_name>' triplet are not supported"
+}
+@[    if not isinstance(ros2_fields[-1].type, AbstractNestedType)]@
+  // convert non-array field
+@[      if not isinstance(ros2_fields[-1].type, NamespacedType)]@
+  // convert primitive field
+  out_stream.next(ros2_msg.@(ros2_field_selection));
+@[      elif ros2_fields[-1].type.namespaces[0] == 'builtin_interfaces']@
+  // convert builtin field
+  ros1_bridge::write_2_to_1_stream(out_stream, ros2_msg.@(ros2_field_selection));
+@[      else]@
+  // convert sub message field
+  Factory<
+    @(ros1_fields[-1].pkg_name)::@(ros1_fields[-1].msg_name),
+    @(ros2_fields[-1].type.namespaces[0])::msg::@(ros2_fields[-1].type.name)
+  >::write_2_to_1_stream(out_stream, ros2_msg.@(ros2_field_selection));
+@[      end if]@
+@[    else]@
+  // convert array or sequence field
+@[      if isinstance(ros2_fields[-1].type, AbstractSequence)]@
+  // dynamically sized sequence, ensure destination vector size is large enough
+  // resize ros1 field to match the ros2 field
+  // TODO ros1_msg.@(ros1_field_selection).resize(ros2_msg.@(ros2_field_selection).size());
+@[      else]@
+  // statically sized array
+  static_assert(
+    (ros1_msg.@(ros1_field_selection).static_size) >= std::tuple_size<decltype(ros2_msg.@(ros2_field_selection))>::value,
+    "destination array not large enough for source array"
+  );
+@[      end if]@
+@[      if not isinstance(ros2_fields[-1].type.value_type, NamespacedType)]@
+  // convert primitive array elements
+  std::copy(
+    ros2_msg.@(ros2_field_selection).begin(),
+    ros2_msg.@(ros2_field_selection).end(),
+    ros1_msg.@(ros1_field_selection).begin());
+@[      else]@
+  // copy element wise since the type is different
+  {
+    for (
+      auto ros2_it = ros2_msg.@(ros2_field_selection).cbegin();
+      ros2_it != ros2_msg.@(ros2_field_selection).cend();
+      ++ros2_it
+    )
+    {
+      // convert sub message element
+@[        if ros2_fields[-1].type.value_type.namespaces[0] == 'builtin_interfaces']@
+      ros1_bridge::write_2_to_1_stream(out_stream, *ros2_it);
+@[        else]@
+      Factory<
+        @(ros1_fields[-1].pkg_name)::@(ros1_fields[-1].msg_name),
+        @(ros2_fields[-1].type.value_type.namespaces[0])::msg::@(ros2_fields[-1].type.value_type.name)
+      >::write_2_to_1_stream(out_stream, *ros2_it);
+@[        end if]@
+    }
+  }
+@[      end if]@
+@[    end if]@
+@[  end for]@
+}
+
+template<>
 bool
 Factory<
   @(m.ros1_msg.package_name)::@(m.ros1_msg.message_name),

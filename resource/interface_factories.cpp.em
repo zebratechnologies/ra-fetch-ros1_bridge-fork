@@ -463,7 +463,6 @@ Factory<
   msg_2_to_1_stream(in_stream, ros2_msg);
 }
 
-/*
 template<>
 uint32_t
 Factory<
@@ -475,7 +474,6 @@ Factory<
   msg_2_to_1_stream(len_stream, ros2_msg);
   return len_stream.getLength();
 }
-*/
 
 }  // namespace ros1_bridge
 

@@ -61,6 +61,16 @@ msg_2_to_1_stream(
 
 template<>
 void
+msg_2_to_1_stream(
+  ros::serialization::LStream & stream,
+  const builtin_interfaces::msg::Duration & ros2_msg)
+{
+  stream.next(ros2_msg.sec);
+  stream.next(ros2_msg.nanosec);
+}
+
+template<>
+void
 convert_1_to_2(
   const ros::Time & ros1_type,
   builtin_interfaces::msg::Time & ros2_msg)
@@ -94,6 +104,16 @@ void
 msg_2_to_1_stream(
   ros::serialization::IStream & stream,
   builtin_interfaces::msg::Time & ros2_msg)
+{
+  stream.next(ros2_msg.sec);
+  stream.next(ros2_msg.nanosec);
+}
+
+template<>
+void
+msg_2_to_1_stream(
+  ros::serialization::LStream& stream,
+  const builtin_interfaces::msg::Time& ros2_msg)
 {
   stream.next(ros2_msg.sec);
   stream.next(ros2_msg.nanosec);

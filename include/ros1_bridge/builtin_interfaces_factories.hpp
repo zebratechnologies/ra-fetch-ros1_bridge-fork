@@ -90,6 +90,15 @@ Factory<
   ros::serialization::IStream& stream,
   builtin_interfaces::msg::Duration& msg);
 
+template<>
+template<>
+void
+Factory<
+  std_msgs::Duration,
+  builtin_interfaces::msg::Duration
+>::msg_2_to_1_stream(
+  ros::serialization::LStream& stream,
+  const builtin_interfaces::msg::Duration& msg);
 
 template<>
 void
@@ -141,6 +150,15 @@ Factory<
   ros::serialization::IStream& stream,
   builtin_interfaces::msg::Time& msg);
 
+template<>
+template<>
+void
+Factory<
+  std_msgs::Time,
+  builtin_interfaces::msg::Time
+>::msg_2_to_1_stream(
+  ros::serialization::LStream& stream,
+  const builtin_interfaces::msg::Time& msg);
 
 }  // namespace ros1_bridge
 

@@ -215,4 +215,16 @@ Factory<
   ros1_bridge::msg_2_to_1_stream(stream, ros2_msg);
 }
 
+template<>
+uint32_t
+Factory<
+  std_msgs::Time,
+  builtin_interfaces::msg::Time
+>::length_2_to_1_stream(const builtin_interfaces::msg::Time & ros2_msg)
+{
+  ros::serialization::LStream len_stream;
+  msg_2_to_1_stream(len_stream, ros2_msg);
+  return len_stream.getLength();
+}
+
 }  // namespace ros1_bridge

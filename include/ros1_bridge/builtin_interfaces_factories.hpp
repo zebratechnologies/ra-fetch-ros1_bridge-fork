@@ -160,6 +160,16 @@ Factory<
   ros::serialization::LStream& stream,
   const builtin_interfaces::msg::Time& msg);
 
+/*
+template<>
+template<>
+uint32_t
+Factory<
+  std_msgs::Time,
+  builtin_interfaces::msg::Time
+>::length_2_to_1_stream(const builtin_interfaces::msg::Time & ros2_msg);
+*/
+
 }  // namespace ros1_bridge
 
 #endif  // ROS1_BRIDGE__BUILTIN_INTERFACES_FACTORIES_HPP_

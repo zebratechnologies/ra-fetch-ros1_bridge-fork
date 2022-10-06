@@ -334,7 +334,7 @@ public:
   /**
    * @brief Determines the length of a ROS2 class if it was serialized to a ROS1 stream
    */
-  static uint32_t length_2_to_1_stream(const ROS2_T& msg);
+  static uint32_t length_2_to_1_stream(const ROS2_T& msg); // TODO def here?
 
   template<typename STREAM_T, typename ROS2_MSG_T>
   static void msg_2_to_1_stream(STREAM_T&, ROS2_MSG_T& msg);

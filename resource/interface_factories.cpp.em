@@ -339,12 +339,15 @@ void ServiceFactory<
 }  // namespace ros1_bridge
 
 
-
 // ROS1 serialization functions
-@[for m in mapped_msgs]@
-
 namespace ros1_bridge
 {
+
+@[for m in mapped_msgs]@
+
+@[  if m.ros2_msg.package_name=="std_msgs" and m.ros2_msg.message_name=="Header"]
+// msg_2_to_1_stream for std_msgs::(msg)::Header should be specialized because of lack of seq
+@[  else]
 
 template<>
 template<typename STREAM_T, typename ROS2_MSG_T>
@@ -355,11 +358,11 @@ Factory<
 >::msg_2_to_1_stream(STREAM_T& stream,
                      ROS2_MSG_T& ros2_msg)
 {
-@[  if not m.fields_2_to_1]@
+@[    if not m.fields_2_to_1]@
   // No m.fields_1_to_2
   // TODO : throw exception?
-@[  end if]@
-@[  for ros2_fields, ros1_fields in m.fields_2_to_1.items()]@
+@[    end if]@
+@[    for ros2_fields, ros1_fields in m.fields_2_to_1.items()]@
 @{
 ros2_field_selection = '.'.join((str(field.name) for field in ros2_fields))
 ros1_field_selection = '.'.join((str(field.name) for field in ros1_fields))
@@ -369,30 +372,30 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
     assert len(namespaces) == 2 and namespaces[1] == 'msg', \
       "messages not using the '<pkg_name>, msg, <type_name>' triplet are not supported"
 }
-@[    if not isinstance(ros2_fields[-1].type, AbstractNestedType)]@
+@[      if not isinstance(ros2_fields[-1].type, AbstractNestedType)]@
   // write non-array field
-@[      if not isinstance(ros2_fields[-1].type, NamespacedType)]@
+@[        if not isinstance(ros2_fields[-1].type, NamespacedType)]@
   // write primitive field
   stream.next(ros2_msg.@(ros2_field_selection));
-@[      elif ros2_fields[-1].type.namespaces[0] == 'builtin_interfaces']@
+@[        elif ros2_fields[-1].type.namespaces[0] == 'builtin_interfaces']@
   // write builtin field
   ros1_bridge::msg_2_to_1_stream(stream, ros2_msg.@(ros2_field_selection));
-@[      else]@
+@[        else]@
   // write sub message field
   Factory<
     @(ros1_fields[-1].pkg_name)::@(ros1_fields[-1].msg_name),
     @(ros2_fields[-1].type.namespaces[0])::msg::@(ros2_fields[-1].type.name)
   >::msg_2_to_1_stream(stream, ros2_msg.@(ros2_field_selection));
-@[      end if]@
-@[    else]@
-  // write array or sequence field
-@[      if isinstance(ros2_fields[-1].type, AbstractSequence)]@
-  // dynamically sized sequence
+@[        end if]@
 @[      else]@
+  // write array or sequence field
+@[        if isinstance(ros2_fields[-1].type, AbstractSequence)]@
+  // dynamically sized sequence
+@[        else]@
   // statically sized array
   // TODO validate ROS1 and ROS2 field sizes match?
-@[      end if]@
-@[      if not isinstance(ros2_fields[-1].type.value_type, NamespacedType)]@
+@[        end if]@
+@[        if not isinstance(ros2_fields[-1].type.value_type, NamespacedType)]@
   // write primitive array elements
   {
     for (
@@ -402,19 +405,19 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
     )
     {
       // write sub message element
-@[        if isinstance(ros2_fields[-1].type.value_type, UnboundedString)]@
+@[          if isinstance(ros2_fields[-1].type.value_type, UnboundedString)]@
       // write UnboundedString
       stream.next(*ros2_it);
-@[        elif ros2_fields[-1].type.value_type.typename == 'builtin_interfaces']@
+@[          elif ros2_fields[-1].type.value_type.typename == 'builtin_interfaces']@
       // write sub message element
       ros1_bridge::msg_2_to_1_stream(stream, *ros2_it);
-@[        else]@
+@[          else]@
       // write primative type
       stream.next(*ros2_it);
-@[        end if]@
+@[          end if]@
     }
   }
-@[      else]@
+@[        else]@
   // write element wise since the type is different
   {
     for (
@@ -426,19 +429,20 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
       // write sub message element
 @[        if ros2_fields[-1].type.value_type.namespaces[0] == 'builtin_interfaces']@
       ros1_bridge::msg_2_to_1_stream(stream, *ros2_it);
-@[        else]@
+@[          else]@
       Factory<
         @(ros1_fields[-1].pkg_name)::@(ros1_fields[-1].msg_name),
         @(ros2_fields[-1].type.value_type.namespaces[0])::msg::@(ros2_fields[-1].type.value_type.name)
       >::msg_2_to_1_stream(stream, *ros2_it);
-@[        end if]@
+@[          end if]@
     }
   }
+@[        end if]@
 @[      end if]@
-@[    end if]@
-@[  end for]@
+@[    end for]@
 }
 
+@[  end if]
 
 template<>
 void
@@ -475,7 +479,5 @@ Factory<
   return len_stream.getLength();
 }
 
-}  // namespace ros1_bridge
-
-
 @[end for]@
+}  // namespace ros1_bridge

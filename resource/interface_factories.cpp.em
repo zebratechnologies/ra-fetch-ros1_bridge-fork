@@ -391,6 +391,10 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
   // write array or sequence field
 @[        if isinstance(ros2_fields[-1].type, AbstractSequence)]@
   // dynamically sized sequence
+  {
+    uint32_t data_len = ros2_msg.@(ros2_field_selection).size();
+    stream.next(data_len);
+  }
 @[        else]@
   // statically sized array
   // TODO validate ROS1 and ROS2 field sizes match?

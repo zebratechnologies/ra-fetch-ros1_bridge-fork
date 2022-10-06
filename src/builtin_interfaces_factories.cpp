@@ -227,4 +227,62 @@ Factory<
   return len_stream.getLength();
 }
 
+
+template<>
+template<typename STREAM_T, typename ROS2_MSG_T>
+void
+Factory<
+  std_msgs::Header,
+  std_msgs::msg::Header
+>::msg_2_to_1_stream(STREAM_T& stream,
+                     ROS2_MSG_T& ros2_msg)
+{
+  // ROS2 Header is missing seq, provide a fake one so stream matches
+  uint32_t seq = 0;
+  stream.next(seq);
+
+  // write non-array field
+  // write builtin field
+  ros1_bridge::msg_2_to_1_stream(stream, ros2_msg.stamp);
+
+  // write non-array field
+  // write primitive field
+  stream.next(ros2_msg.frame_id);
+}
+
+template<>
+void
+Factory<
+  std_msgs::Header,
+  std_msgs::msg::Header
+>::write_2_to_1_stream(ros::serialization::OStream& out_stream,
+                       const std_msgs::msg::Header& ros2_msg)
+{
+  msg_2_to_1_stream(out_stream, ros2_msg);
+}
+
+
+template<>
+void
+Factory<
+  std_msgs::Header,
+  std_msgs::msg::Header
+>::read_2_to_1_stream(ros::serialization::IStream& in_stream,
+                      std_msgs::msg::Header& ros2_msg)
+{
+  msg_2_to_1_stream(in_stream, ros2_msg);
+}
+
+template<>
+uint32_t
+Factory<
+  std_msgs::Header,
+  std_msgs::msg::Header
+>::length_2_to_1_stream(const std_msgs::msg::Header& ros2_msg)
+{
+  ros::serialization::LStream len_stream;
+  msg_2_to_1_stream(len_stream, ros2_msg);
+  return len_stream.getLength();
+}
+
 }  // namespace ros1_bridge

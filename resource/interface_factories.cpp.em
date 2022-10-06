@@ -442,8 +442,6 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
 @[    end for]@
 }
 
-@[  end if]
-
 template<>
 void
 Factory<
@@ -478,6 +476,8 @@ Factory<
   msg_2_to_1_stream(len_stream, ros2_msg);
   return len_stream.getLength();
 }
+
+@[  end if]
 
 @[end for]@
 }  // namespace ros1_bridge

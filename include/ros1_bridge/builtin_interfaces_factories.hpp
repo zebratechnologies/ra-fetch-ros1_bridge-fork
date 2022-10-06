@@ -17,6 +17,7 @@
 
 // include ROS 1 messages
 #include <std_msgs/Duration.h>
+#include <std_msgs/Header.h>
 #include <std_msgs/Time.h>
 
 #include <memory>
@@ -25,6 +26,7 @@
 // include ROS 2 messages
 #include <builtin_interfaces/msg/duration.hpp>
 #include <builtin_interfaces/msg/time.hpp>
+#include <std_msgs/msg/header.hpp>
 
 #include "ros1_bridge/factory.hpp"
 

@@ -344,8 +344,9 @@ namespace ros1_bridge
 {
 
 // This version is write or length
-template<typename STREAM_T, typename FIELD_T>
-static void streamVectorSize(STREAM_T& stream, const std::vector<FIELD_T>& vec)
+template<typename STREAM_T, typename VEC_T>
+//static void streamVectorSize(STREAM_T& stream, const std::vector<FIELD_T>& vec)
+static void streamVectorSize(STREAM_T& stream, const VEC_T& vec)
 {
   // Output size of vector to stream
   uint32_t data_len = vec.size();
@@ -353,8 +354,9 @@ static void streamVectorSize(STREAM_T& stream, const std::vector<FIELD_T>& vec)
 }
 
 // This version is for read
-template<typename STREAM_T, typename FIELD_T>
-static void streamVectorSize(STREAM_T& stream, std::vector<FIELD_T>& vec)
+template<typename STREAM_T, typename VEC_T>
+//static void streamVectorSize(STREAM_T& stream, std::vector<FIELD_T>& vec)
+static void streamVectorSize(STREAM_T& stream, VEC_T& vec)
 {
   // Resize vector to match size in stream
   uint32_t data_len = 0;

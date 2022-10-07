@@ -60,18 +60,6 @@ Factory<
   const builtin_interfaces::msg::Duration & ros2_msg,
   std_msgs::Duration & ros1_msg);
 
-/*
-template<>
-template<typename STREAM_T>
-void
-Factory<
-  std_msgs::Duration,
-  builtin_interfaces::msg::Duration
->::msg_2_to_1_stream(
-  STREAM_T& stream,
-  const builtin_interfaces::msg::Duration& msg);
-*/
-
 template<>
 template<>
 void
@@ -120,18 +108,6 @@ Factory<
   const builtin_interfaces::msg::Time & ros2_msg,
   std_msgs::Time & ros1_msg);
 
-/*
-template<>
-template<typename STREAM_T>
-void
-Factory<
-  std_msgs::Time,
-  builtin_interfaces::msg::Time
->::msg_2_to_1_stream(
-  STREAM_T& stream,
-  const builtin_interfaces::msg::Time& msg);
-*/
-
 template<>
 template<>
 void
@@ -161,16 +137,6 @@ Factory<
 >::msg_2_to_1_stream(
   ros::serialization::LStream& stream,
   const builtin_interfaces::msg::Time& msg);
-
-/*
-template<>
-template<>
-uint32_t
-Factory<
-  std_msgs::Time,
-  builtin_interfaces::msg::Time
->::length_2_to_1_stream(const builtin_interfaces::msg::Time & ros2_msg);
-*/
 
 }  // namespace ros1_bridge
 

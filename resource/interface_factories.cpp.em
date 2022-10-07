@@ -343,6 +343,25 @@ void ServiceFactory<
 namespace ros1_bridge
 {
 
+// This version is write or length
+template<typename STREAM_T, typename FIELD_T>
+static void streamVectorSize(STREAM_T& stream, const std::vector<FIELD_T>& vec)
+{
+  // Output size of vector to stream
+  uint32_t data_len = vec.size();
+  stream.next(data_len);
+}
+
+// This version is for read
+template<typename STREAM_T, typename FIELD_T>
+static void streamVectorSize(STREAM_T& stream, std::vector<FIELD_T>& vec)
+{
+  // Resize vector to match size in stream
+  uint32_t data_len = 0;
+  stream.next(data_len);
+  vec.resize(data_len);
+}
+
 @[for m in mapped_msgs]@
 
 @[  if m.ros2_msg.package_name=="std_msgs" and m.ros2_msg.message_name=="Header"]
@@ -391,10 +410,7 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
   // write array or sequence field
 @[        if isinstance(ros2_fields[-1].type, AbstractSequence)]@
   // dynamically sized sequence
-  {
-    uint32_t data_len = ros2_msg.@(ros2_field_selection).size();
-    stream.next(data_len);
-  }
+  streamVectorSize(stream, ros2_msg.@(ros2_field_selection));
 @[        else]@
   // statically sized array
   // TODO validate ROS1 and ROS2 field sizes match?

@@ -324,17 +324,17 @@ public:
   /**
    * @brief Writes (serializes) a ROS2 class directly to a ROS1 stream
    */
-  static void write_2_to_1_stream(ros::serialization::OStream& out_stream, const ROS2_T& msg);
+  static void write_2_to_1_stream(ros::serialization::OStream & out_stream, const ROS2_T & msg);
 
   /**
    * @brief Reads (deserializes) a ROS2 class directly from a ROS1 stream
    */
-  static void read_2_to_1_stream(ros::serialization::IStream& in_stream, ROS2_T& msg);
+  static void read_2_to_1_stream(ros::serialization::IStream & in_stream, ROS2_T & msg);
 
   /**
    * @brief Determines the length of a ROS2 class if it was serialized to a ROS1 stream
    */
-  static uint32_t length_2_to_1_stream(const ROS2_T& msg); // TODO def here?
+  static uint32_t length_2_to_1_stream(const ROS2_T & msg); // TODO def here?
 
   template<typename STREAM_T, typename ROS2_MSG_T>
   static void msg_2_to_1_stream(STREAM_T&, ROS2_MSG_T& msg);

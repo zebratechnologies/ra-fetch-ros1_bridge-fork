@@ -82,21 +82,6 @@ Factory<
   ros1_bridge::convert_2_to_1(ros2_msg, ros1_msg.data);
 }
 
-/*
-template<>
-template<typename STREAM_T>
-void
-Factory<
-  std_msgs::Duration,
-  builtin_interfaces::msg::Duration
->::msg_2_to_1_stream(
-  STREAM_T& stream,
-  const builtin_interfaces::msg::Duration& msg)
-{
-  ros1_bridge::msg_2_to_1_stream(stream, msg);
-}
-*/
-
 template<>
 template<>
 void
@@ -136,6 +121,44 @@ Factory<
   ros1_bridge::msg_2_to_1_stream(stream, ros2_msg);
 }
 
+template<>
+void
+Factory<
+  std_msgs::Duration,
+  builtin_interfaces::msg::Duration
+>::write_2_to_1_stream(ros::serialization::OStream & out_stream,
+                       const builtin_interfaces::msg::Duration & ros2_msg)
+{
+  msg_2_to_1_stream(out_stream, ros2_msg);
+}
+
+template<>
+void
+Factory<
+  std_msgs::Duration,
+  builtin_interfaces::msg::Duration
+>::read_2_to_1_stream(ros::serialization::IStream& in_stream,
+                      builtin_interfaces::msg::Duration & ros2_msg)
+{
+  msg_2_to_1_stream(in_stream, ros2_msg);
+}
+
+template<>
+uint32_t
+Factory<
+  std_msgs::Duration,
+  builtin_interfaces::msg::Duration
+>::length_2_to_1_stream(const builtin_interfaces::msg::Duration & ros2_msg)
+{
+  ros::serialization::LStream len_stream;
+  msg_2_to_1_stream(len_stream, ros2_msg);
+  return len_stream.getLength();
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+////// TIME
+////////////////////////////////////////////////////////////////////////////////
 
 template<>
 void
@@ -160,21 +183,6 @@ Factory<
 {
   ros1_bridge::convert_2_to_1(ros2_msg, ros1_msg.data);
 }
-
-/*
-template<>
-template<typename STREAM_T>
-void
-Factory<
-  std_msgs::Time,
-  builtin_interfaces::msg::Time
->::msg_2_to_1_stream(
-  STREAM_T& stream,
-  const builtin_interfaces::msg::Time& msg)
-{
-  ros1_bridge::msg_2_to_1_stream(stream, msg);
-}
-*/
 
 template<>
 template<>
@@ -216,6 +224,28 @@ Factory<
 }
 
 template<>
+void
+Factory<
+  std_msgs::Time,
+  builtin_interfaces::msg::Time
+>::write_2_to_1_stream(ros::serialization::OStream & out_stream,
+                       const builtin_interfaces::msg::Time & ros2_msg)
+{
+  msg_2_to_1_stream(out_stream, ros2_msg);
+}
+
+template<>
+void
+Factory<
+  std_msgs::Time,
+  builtin_interfaces::msg::Time
+>::read_2_to_1_stream(ros::serialization::IStream& in_stream,
+                      builtin_interfaces::msg::Time & ros2_msg)
+{
+  msg_2_to_1_stream(in_stream, ros2_msg);
+}
+
+template<>
 uint32_t
 Factory<
   std_msgs::Time,
@@ -227,6 +257,10 @@ Factory<
   return len_stream.getLength();
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+////// HEADER
+////////////////////////////////////////////////////////////////////////////////
 
 template<>
 template<typename STREAM_T, typename ROS2_MSG_T>

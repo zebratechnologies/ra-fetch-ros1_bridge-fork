@@ -343,9 +343,8 @@ void ServiceFactory<
 namespace ros1_bridge
 {
 
-// This version is write or length
+// This version is for write or length
 template<typename STREAM_T, typename VEC_T>
-//static void streamVectorSize(STREAM_T& stream, const std::vector<FIELD_T>& vec)
 static void streamVectorSize(STREAM_T& stream, const VEC_T& vec)
 {
   // Output size of vector to stream
@@ -355,13 +354,38 @@ static void streamVectorSize(STREAM_T& stream, const VEC_T& vec)
 
 // This version is for read
 template<typename STREAM_T, typename VEC_T>
-//static void streamVectorSize(STREAM_T& stream, std::vector<FIELD_T>& vec)
 static void streamVectorSize(STREAM_T& stream, VEC_T& vec)
 {
   // Resize vector to match size in stream
   uint32_t data_len = 0;
   stream.next(data_len);
   vec.resize(data_len);
+}
+
+// This version is for write
+template<typename VEC_PRIMITIVE_T>
+static void streamPrimitiveVector(ros::serialization::OStream & stream, const VEC_PRIMITIVE_T& vec)
+{
+  const uint32_t data_len = vec.size() * sizeof(typename VEC_PRIMITIVE_T::value_type);
+  // copy data from std::vector/std::array into stream
+  memcpy(stream.advance(data_len), vec.data(), data_len);
+}
+
+// This version is for length
+template<typename VEC_PRIMITIVE_T>
+static void streamPrimitiveVector(ros::serialization::LStream & stream, const VEC_PRIMITIVE_T& vec)
+{
+  const uint32_t data_len = vec.size() * sizeof(typename VEC_PRIMITIVE_T::value_type);
+  stream.advance(data_len);
+}
+
+// This version is for read
+template<typename VEC_PRIMITIVE_T>
+static void streamPrimitiveVector(ros::serialization::IStream & stream, VEC_PRIMITIVE_T& vec)
+{
+  const uint32_t data_len = vec.size() * sizeof(typename VEC_PRIMITIVE_T::value_type);
+  // copy data from stream into std::vector/std::array
+  memcpy(vec.data(), stream.advance(data_len), data_len);
 }
 
 @[for m in mapped_msgs]@
@@ -441,7 +465,7 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
   }
 @[          else]@
   // write primitive type
-  stream.next(ros2_msg.@(ros2_field_selection));
+  streamPrimitiveVector(stream, ros2_msg.@(ros2_field_selection));
 @[          end if]@
 @[        else]@
   // write element wise since the type is different

@@ -419,26 +419,30 @@ if isinstance(ros2_fields[-1].type, NamespacedType):
 @[        end if]@
 @[        if not isinstance(ros2_fields[-1].type.value_type, NamespacedType)]@
   // write primitive array elements
-  {
-    for (
-      auto ros2_it = ros2_msg.@(ros2_field_selection).begin();
-      ros2_it != ros2_msg.@(ros2_field_selection).end();
-      ++ros2_it
-    )
-    {
-      // write sub message element
 @[          if isinstance(ros2_fields[-1].type.value_type, UnboundedString)]@
-      // write UnboundedString
-      stream.next(*ros2_it);
-@[          elif ros2_fields[-1].type.value_type.typename == 'builtin_interfaces']@
-      // write sub message element
-      ros1_bridge::msg_2_to_1_stream(stream, *ros2_it);
-@[          else]@
-      // write primative type
-      stream.next(*ros2_it);
-@[          end if]@
-    }
+  // write UnboundedString
+  for (
+    auto ros2_it = ros2_msg.@(ros2_field_selection).begin();
+    ros2_it != ros2_msg.@(ros2_field_selection).end();
+    ++ros2_it
+  )
+  {
+    stream.next(*ros2_it);
   }
+@[          elif ros2_fields[-1].type.value_type.typename == 'builtin_interfaces']@
+  // write builtin
+  for (
+    auto ros2_it = ros2_msg.@(ros2_field_selection).begin();
+    ros2_it != ros2_msg.@(ros2_field_selection).end();
+    ++ros2_it
+  )
+  {
+    ros1_bridge::msg_2_to_1_stream(stream, *ros2_it);
+  }
+@[          else]@
+  // write primitive type
+  stream.next(ros2_msg.@(ros2_field_selection));
+@[          end if]@
 @[        else]@
   // write element wise since the type is different
   {

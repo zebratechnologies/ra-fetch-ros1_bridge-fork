@@ -368,7 +368,7 @@ static void streamPrimitiveVector(ros::serialization::OStream & stream, const VE
 {
   const uint32_t data_len = vec.size() * sizeof(typename VEC_PRIMITIVE_T::value_type);
   // copy data from std::vector/std::array into stream
-  memcpy(stream.advance(data_len), vec.data(), data_len);
+  memcpy(stream.advance(data_len), &vec.front(), data_len);
 }
 
 // This version is for length
@@ -385,7 +385,7 @@ static void streamPrimitiveVector(ros::serialization::IStream & stream, VEC_PRIM
 {
   const uint32_t data_len = vec.size() * sizeof(typename VEC_PRIMITIVE_T::value_type);
   // copy data from stream into std::vector/std::array
-  memcpy(vec.data(), stream.advance(data_len), data_len);
+  memcpy(&vec.front(), stream.advance(data_len), data_len);
 }
 
 @[for m in mapped_msgs]@

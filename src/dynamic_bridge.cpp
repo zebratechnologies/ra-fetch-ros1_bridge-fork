@@ -252,10 +252,11 @@ void update_bridge(
     bridge.ros1_type_name = ros1_type_name;
     bridge.ros2_type_name = ros2_type_name;
 
+    const auto ros2_sub_qos = rclcpp::QoS(10).reliable();
     try {
       bridge.bridge_handles = ros1_bridge::create_bridge_from_2_to_1(
         ros2_node, ros1_node,
-        bridge.ros2_type_name, topic_name, 10,
+        bridge.ros2_type_name, topic_name, ros2_sub_qos,
         bridge.ros1_type_name, topic_name, 10);
     } catch (std::runtime_error & e) {
       fprintf(

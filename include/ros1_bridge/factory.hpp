@@ -258,6 +258,21 @@ protected:
     ros1_pub.publish(ros1_msg);
   }
 
+public:
+  // since convert functions call each other for sub messages they must be public
+  // defined outside of the class
+  static
+  void
+  convert_1_to_2(
+    const ROS1_T & ros1_msg,
+    ROS2_T & ros2_msg);
+  static
+  void
+  convert_2_to_1(
+    const ROS2_T & ros2_msg,
+    ROS1_T & ros1_msg);
+
+
   const char* get_ros1_md5sum() const override
   {
     return ros::message_traits::MD5Sum<ROS1_T>::value();
@@ -306,20 +321,6 @@ protected:
 
     return true;
   };
-
-public:
-  // since convert functions call each other for sub messages they must be public
-  // defined outside of the class
-  static
-  void
-  convert_1_to_2(
-    const ROS1_T & ros1_msg,
-    ROS2_T & ros2_msg);
-  static
-  void
-  convert_2_to_1(
-    const ROS2_T & ros2_msg,
-    ROS1_T & ros1_msg);
 
   /**
    * @brief Writes (serializes) a ROS2 class directly to a ROS1 stream

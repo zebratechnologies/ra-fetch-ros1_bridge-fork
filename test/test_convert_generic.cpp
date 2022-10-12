@@ -23,6 +23,9 @@
 // ros1_bridge
 #include "ros1_bridge/factory.hpp"
 
+// RCLCPP
+#include "rclcpp/serialized_message.hpp"
+
 // ROS1 Messsages
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/Vector3.h>
@@ -59,9 +62,9 @@ struct Vector3Test : public GenericTestBase<geometry_msgs::Vector3, geometry_msg
 {
   Vector3Test() : GenericTestBase("geometry_msgs/Vector3", "geometry_msgs/msg/Vector3")
   {
-    ros1_msg.x = ros2_msg.x = 1.0;
-    ros1_msg.y = ros2_msg.y = 1.0;
-    ros1_msg.z = ros2_msg.z = 1.0;
+    ros1_msg.x = ros2_msg.x = 1.1;
+    ros1_msg.y = ros2_msg.y = 2.2;
+    ros1_msg.z = ros2_msg.z = 3.3;
   }
 };
 
@@ -107,7 +110,6 @@ using ConvertGenericTypes = ::testing::Types<
 TYPED_TEST_SUITE(ConvertGenericTest, ConvertGenericTypes);
 
 
-// NOTE(hidmic): cppcheck complains about gtest macros
 // cppcheck-suppress syntaxError
 TYPED_TEST(ConvertGenericTest, test_factory_md5)
 {
@@ -118,6 +120,59 @@ TYPED_TEST(ConvertGenericTest, test_factory_md5)
   using ROS1_T = typename TestFixture::ROS1_T;
   EXPECT_EQ(std::string(fixture.test.factory.get_ros1_md5sum()),
             std::string(ros::message_traits::MD5Sum<ROS1_T>::value()));
+}
+
+
+// cppcheck-suppress syntaxError
+TYPED_TEST(ConvertGenericTest, test_convert_2_to_1)
+{
+  // ros2/rclcpp/rclcpp/src/rclcpp/serialized_message.cpp
+  rclcpp::SerializedMessage serialized_msg;
+  const auto& ros2_msg = this->test.ros2_msg;
+  auto ret = rmw_serialize(&ros2_msg, this->test.factory.type_support_,
+                           &serialized_msg.get_rcl_serialized_message());
+  EXPECT_EQ(RMW_RET_OK, ret);
+
+  topic_tools::ShapeShifter shape_shifter;
+  const bool latched = false;
+  bool success = this->test.factory.convert_2_to_1_generic(serialized_msg, shape_shifter, latched);
+  ASSERT_TRUE(success);
+
+  // Shape shifter's internal buffer is private, so access it by writing it into a stream
+  const uint32_t length2 = shape_shifter.size();
+  std::vector<uint8_t> buffer2(length2);
+  ros::serialization::OStream out_stream2(buffer2.data(), length2);
+  shape_shifter.write(out_stream2);
+
+  // Write ROS1 message (which should have same feild values as ROS2 message) in a different stream
+  using ROS1_T = typename TestFixture::ROS1_T;
+  const ROS1_T& ros1_msg = this->test.ros1_msg;
+  const uint32_t length1 = ros::serialization::serializationLength(ros1_msg);
+  std::vector<uint8_t> buffer1(length1);
+  ros::serialization::OStream out_stream1(buffer1.data(), length1);
+  ros::serialization::serialize(out_stream1, ros1_msg);
+
+  // Buffer1 and Buffer2 should match in size and contents
+  ASSERT_EQ(length1, length2);
+
+  // The Gtest output from comparing buffers directly is a little hard to
+  // understand when there is a few mismatching value
+  // Instead use custom loop to make each mismatched byte easier to understand
+  // ASSERT_EQ(buffer1, buffer2);
+  unsigned mismatch_count = 0;
+  const unsigned mismatch_count_limit = 10;
+  for (size_t idx = 0; idx < length1; ++idx)
+  {
+    int val1 = buffer1.at(idx);
+    int val2 = buffer2.at(idx);
+    EXPECT_EQ(val1, val2) << " idx=" << idx;
+    if (val1 != val2)
+    {
+      ++mismatch_count;
+    }
+    ASSERT_LE(mismatch_count, mismatch_count_limit) << " stopping comparison after " << mismatch_count_limit << " mismatches";
+  }
+  ASSERT_EQ(mismatch_count, 0u) << " the output buffers should be exactly the same";
 }
 
 int main(int argc, char ** argv)

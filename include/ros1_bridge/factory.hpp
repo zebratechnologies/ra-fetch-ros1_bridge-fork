@@ -322,6 +322,39 @@ public:
     return true;
   };
 
+  bool convert_1_to_2_generic(const topic_tools::ShapeShifter &shape_shifter, rclcpp::SerializedMessage& ros2_msg) const override
+  {
+    if (type_support_ == nullptr)
+    {
+      return false;
+    }
+
+    // Shape shifter doesn't allow direct access to internal buffer of serialized data
+    // so write out buffer to another buffer first
+    // TODO(make custom "stream" class to work-around this without needing an extra copy
+    const uint32_t length = shape_shifter.size();
+    std::vector<uint8_t> buffer(length);
+    ros::serialization::OStream out_stream(buffer.data(), length);
+    shape_shifter.write(out_stream);
+
+    // Deserialize to a ROS1 message
+    ROS1_T ros1_typed_msg;
+    ros::serialization::IStream in_stream(buffer.data(), length);
+    ros::serialization::deserialize(in_stream, ros1_typed_msg);
+
+    // Call convert_1_to_2
+    ROS2_T ros2_typed_msg;
+    convert_1_to_2(&ros1_typed_msg, &ros2_typed_msg);
+
+    // Serialize ROS2 message
+    if (rmw_serialize(&ros2_typed_msg, type_support_, &ros2_msg.get_rcl_serialized_message()) != RMW_RET_OK)
+    {
+      return false;
+    }
+
+    return true;
+  }
+
   /**
    * @brief Writes (serializes) a ROS2 class directly to a ROS1 stream
    */

@@ -122,6 +122,9 @@ public:
   virtual
   bool convert_2_to_1_generic(const rclcpp::SerializedMessage& ros2_msg, topic_tools::ShapeShifter &shape_shifter, bool latched) const = 0;
 
+  virtual
+  bool convert_1_to_2_generic(const topic_tools::ShapeShifter &shape_shifter, rclcpp::SerializedMessage& ros2_msg) const = 0;
+
   virtual const char* get_ros1_md5sum() const = 0;
   virtual const char* get_ros1_data_type() const = 0;
   virtual const char* get_ros1_message_definition() const = 0;

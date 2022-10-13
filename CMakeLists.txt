@@ -210,6 +210,7 @@ add_library(${PROJECT_NAME} SHARED
   "src/builtin_interfaces_factories.cpp"
   "src/convert_builtin_interfaces.cpp"
   "src/bridge.cpp"
+  "src/shape_shifter_access.cpp"
   ${generated_files})
 ament_target_dependencies(${PROJECT_NAME}
   ${prefixed_ros1_message_packages}

@@ -22,6 +22,7 @@
 
 // ros1_bridge
 #include "ros1_bridge/factory.hpp"
+#include "ros1_bridge/shape_shifter_access.hpp"
 
 // RCLCPP
 #include "rclcpp/serialized_message.hpp"
@@ -43,7 +44,6 @@
 #include <std_msgs/msg/header.hpp>
 #include <std_msgs/msg/string.hpp>
 
-
 template<typename ROS1_T_, typename ROS2_T_>
 struct GenericTestBase
 {
@@ -56,6 +56,42 @@ struct GenericTestBase
   ROS2_T ros2_msg;
   GenericTestBase(const std::string & ros1_type_name, const std::string & ros2_type_name) :
     factory(ros1_type_name, ros2_type_name) { }
+
+  // Generate serialized buffer from ROS1 message
+  static std::vector<uint8_t> generateBuffer(const ROS1_T & ros1_msg)
+  {
+    // Serialize ROS1 message
+    const uint32_t length = ros::serialization::serializationLength(ros1_msg);
+    std::vector<uint8_t> buffer(length);
+    ros::serialization::OStream out_stream(buffer.data(), length);
+    ros::serialization::serialize(out_stream, ros1_msg);
+    return buffer;
+  }
+
+  // Generate ShapeShifter from ROS1 message
+  static topic_tools::ShapeShifter generateShapeShifter(const ROS1_T & ros1_msg)
+  {
+    std::vector<uint8_t> buffer = generateBuffer(ros1_msg);
+
+    // Create ShapeShifter from serialized ROS1 message
+    // Don't realy need to fill in shape-shifter meta-data,
+    // because convert function doesn't need it
+    topic_tools::ShapeShifter shape_shifter;
+    ros::serialization::IStream in_stream(buffer.data(), buffer.size());
+    shape_shifter.read(in_stream);
+    return shape_shifter;
+  }
+
+  // Generate SerializedMessage from a ROS2 message
+  rclcpp::SerializedMessage generateSerializedMessage(const ROS2_T & ros2_msg)
+  {
+    // Directly serialize ROS2 message
+    rclcpp::SerializedMessage serialized_msg;
+    auto ret = rmw_serialize(&ros2_msg, factory.type_support_,
+                             &serialized_msg.get_rcl_serialized_message());
+    EXPECT_EQ(RMW_RET_OK, ret);
+    return serialized_msg;
+  }
 };
 
 struct Vector3Test : public GenericTestBase<geometry_msgs::Vector3, geometry_msgs::msg::Vector3>
@@ -84,6 +120,80 @@ struct StringTestHello : public StringTestEmpty
   }
 };
 
+struct TimeTest : public GenericTestBase<std_msgs::Time,
+                                         builtin_interfaces::msg::Time>
+{
+  TimeTest() : GenericTestBase("std_msgs/Time", "builtin_interfaces/msg/Time")
+  {
+    ros1_msg.data.sec = ros2_msg.sec = 1000*2000;
+    ros1_msg.data.nsec = ros2_msg.nanosec = 1000*1000*1000;
+  }
+};
+
+struct HeaderTestEmpty : public GenericTestBase<std_msgs::Header,
+                                                std_msgs::msg::Header>
+{
+  HeaderTestEmpty() : GenericTestBase("std_msgs/Header", "std_msgs/msg/Header")
+  {
+    ros1_msg.stamp.sec = ros2_msg.stamp.sec = 100*100;
+    ros1_msg.stamp.nsec = ros2_msg.stamp.nanosec = 100*200*300;
+    ros1_msg.seq = 0;
+    // Leave header.seq as zero, ros2_msg header does not have seq number so generic
+    // serialization function will always write a zero to output stream
+  }
+};
+
+struct HeaderTestBaseLink : public HeaderTestEmpty
+{
+  HeaderTestBaseLink()
+  {
+    ros1_msg.frame_id = ros2_msg.frame_id = "base_link";
+  }
+};
+
+
+struct PoseTest : public GenericTestBase<geometry_msgs::Pose,
+                                         geometry_msgs::msg::Pose>
+{
+  PoseTest() : GenericTestBase("geometry_msgs/Pose", "geometry_msgs/msg/Pose")
+  {
+    ros1_msg.position.x = ros2_msg.position.x = 1.0;
+    ros1_msg.position.y = ros2_msg.position.y = 2.0;
+    ros1_msg.position.z = ros2_msg.position.z = 3.0;
+    ros1_msg.orientation.x = ros2_msg.orientation.x = 4.0;
+    ros1_msg.orientation.y = ros2_msg.orientation.y = 5.0;
+    ros1_msg.orientation.z = ros2_msg.orientation.z = 6.0;
+    ros1_msg.orientation.w = ros2_msg.orientation.w = 7.0;
+  }
+};
+
+struct PoseArrayTestEmpty : public GenericTestBase<geometry_msgs::PoseArray,
+                                               geometry_msgs::msg::PoseArray>
+{
+  PoseArrayTestEmpty() : GenericTestBase("geometry_msgs/PoseArray", "geometry_msgs/msg/PoseArray") {}
+};
+
+struct PoseArrayTest : public PoseArrayTestEmpty
+{
+  PoseArrayTest()
+  {
+    ros1_msg.header.frame_id = ros2_msg.header.frame_id = "base_link";
+    ros1_msg.header.stamp.sec = ros2_msg.header.stamp.sec = 0x12345678;
+    ros1_msg.header.stamp.nsec = ros2_msg.header.stamp.nanosec = 0x76543210;
+    const size_t size = 10;
+    ros1_msg.poses.resize(size);
+    ros2_msg.poses.resize(size);
+    for (size_t ii = 0; ii < size; ++ii)
+    {
+      auto& pose1 = ros1_msg.poses.at(ii);
+      auto& pose2 = ros2_msg.poses.at(ii);
+      pose1.orientation.x = pose2.orientation.x = 0.1 * ii;
+      // By default ROS2 message orientation is 1.0, so need to set this
+      pose1.orientation.w = pose2.orientation.w = 0.9 * ii;
+    }
+  }
+};
+
 
 template <typename TEST_T_>
 class ConvertGenericTest : public testing::Test {
@@ -105,7 +215,13 @@ public:
 using ConvertGenericTypes = ::testing::Types<
   Vector3Test,  // 0
   StringTestEmpty,  // 1
-  StringTestHello  // 2
+  StringTestHello,  // 2
+  TimeTest,  // 3
+  HeaderTestEmpty,  // 4
+  HeaderTestBaseLink,  // 5
+  PoseTest,  // 6
+  PoseArrayTestEmpty,  // 7
+  PoseArrayTest  // 8
   >;
 TYPED_TEST_SUITE(ConvertGenericTest, ConvertGenericTypes);
 
@@ -113,10 +229,7 @@ TYPED_TEST_SUITE(ConvertGenericTest, ConvertGenericTypes);
 // cppcheck-suppress syntaxError
 TYPED_TEST(ConvertGenericTest, test_factory_md5)
 {
-  // Make sure md5sum is available and matches ROS1_T data type
   TestFixture fixture;
-  //using TestBase = TestFixture::TYPE;
-  //type TestFixture::TYPE
   using ROS1_T = typename TestFixture::ROS1_T;
   EXPECT_EQ(std::string(fixture.test.factory.get_ros1_md5sum()),
             std::string(ros::message_traits::MD5Sum<ROS1_T>::value()));
@@ -124,36 +237,53 @@ TYPED_TEST(ConvertGenericTest, test_factory_md5)
 
 
 // cppcheck-suppress syntaxError
+TYPED_TEST(ConvertGenericTest, test_factory_data_type)
+{
+  TestFixture fixture;
+  using ROS1_T = typename TestFixture::ROS1_T;
+  EXPECT_EQ(std::string(fixture.test.factory.get_ros1_data_type()),
+            std::string(ros::message_traits::DataType<ROS1_T>::value()));
+}
+
+
+TYPED_TEST(ConvertGenericTest, test_factory_msg_def)
+{
+  TestFixture fixture;
+  using ROS1_T = typename TestFixture::ROS1_T;
+  EXPECT_EQ(std::string(fixture.test.factory.get_ros1_message_definition()),
+            std::string(ros::message_traits::Definition<ROS1_T>::value()));
+}
+
+// cppcheck-suppress syntaxError
 TYPED_TEST(ConvertGenericTest, test_convert_2_to_1)
 {
-  // ros2/rclcpp/rclcpp/src/rclcpp/serialized_message.cpp
-  rclcpp::SerializedMessage serialized_msg;
-  const auto& ros2_msg = this->test.ros2_msg;
-  auto ret = rmw_serialize(&ros2_msg, this->test.factory.type_support_,
-                           &serialized_msg.get_rcl_serialized_message());
-  EXPECT_EQ(RMW_RET_OK, ret);
+  // Directly serialize ROS2 message
+  rclcpp::SerializedMessage serialized_msg =
+    this->test.generateSerializedMessage(this->test.ros2_msg);
 
+  // Convert ROS2 SerializedMessage into ROS1 shape-shifter
+  // This is the function-under-test
   topic_tools::ShapeShifter shape_shifter;
   const bool latched = false;
   bool success = this->test.factory.convert_2_to_1_generic(serialized_msg, shape_shifter, latched);
   ASSERT_TRUE(success);
 
-  // Shape shifter's internal buffer is private, so access it by writing it into a stream
-  const uint32_t length2 = shape_shifter.size();
-  std::vector<uint8_t> buffer2(length2);
-  ros::serialization::OStream out_stream2(buffer2.data(), length2);
-  shape_shifter.write(out_stream2);
-
-  // Write ROS1 message (which should have same feild values as ROS2 message) in a different stream
+  // Do somewhat redundant check that shape_shifter has the correct ROS1 message information filled in
   using ROS1_T = typename TestFixture::ROS1_T;
-  const ROS1_T& ros1_msg = this->test.ros1_msg;
-  const uint32_t length1 = ros::serialization::serializationLength(ros1_msg);
-  std::vector<uint8_t> buffer1(length1);
-  ros::serialization::OStream out_stream1(buffer1.data(), length1);
-  ros::serialization::serialize(out_stream1, ros1_msg);
+  EXPECT_EQ(std::string(shape_shifter.getDataType()),
+            std::string(ros::message_traits::DataType<ROS1_T>::value()));
+  EXPECT_EQ(std::string(shape_shifter.getMD5Sum()),
+            std::string(ros::message_traits::MD5Sum<ROS1_T>::value()));
+  EXPECT_EQ(std::string(shape_shifter.getMessageDefinition()),
+            std::string(ros::message_traits::Definition<ROS1_T>::value()));
+
+  // Write ROS1 message (which should have same fields values as ROS2 message) in a different stream
+  std::vector<uint8_t> buffer1 = TestFixture::TEST_T::generateBuffer(this->test.ros1_msg);
 
   // Buffer1 and Buffer2 should match in size and contents
-  ASSERT_EQ(length1, length2);
+  // ROS1 serialization this should always be true because there is no padding or empty space
+  // left in any output buffers
+  ASSERT_EQ(buffer1.size(), shape_shifter.size());
 
   // The Gtest output from comparing buffers directly is a little hard to
   // understand when there is a few mismatching value
@@ -161,11 +291,57 @@ TYPED_TEST(ConvertGenericTest, test_convert_2_to_1)
   // ASSERT_EQ(buffer1, buffer2);
   unsigned mismatch_count = 0;
   const unsigned mismatch_count_limit = 10;
-  for (size_t idx = 0; idx < length1; ++idx)
+  for (size_t idx = 0; idx < buffer1.size(); ++idx)
   {
     int val1 = buffer1.at(idx);
-    int val2 = buffer2.at(idx);
-    EXPECT_EQ(val1, val2) << " idx=" << idx;
+    int val2 = ros1_bridge::get_data(shape_shifter)[idx];
+    EXPECT_EQ(val1, val2) << " idx=" << idx << " of " << buffer1.size();
+    if (val1 != val2)
+    {
+      ++mismatch_count;
+    }
+    ASSERT_LE(mismatch_count, mismatch_count_limit) << " stopping comparison after " << mismatch_count_limit << " mismatches";
+  }
+  ASSERT_EQ(mismatch_count, 0u) << " the output buffers should be exactly the same";
+}
+
+
+// cppcheck-suppress syntaxError
+TYPED_TEST(ConvertGenericTest, test_convert_1_to_2_to_1)
+{
+  // Serialize ROS1 message into a ShapeShifter
+  topic_tools::ShapeShifter shape_shifter1 =
+    TestFixture::TEST_T::generateShapeShifter(this->test.ros1_msg);
+
+  // Convert ROS1 shape-shifter into ROS2 SerializedMessage
+  // This is the function-under-test
+  rclcpp::SerializedMessage serialized_msg;
+  bool success = this->test.factory.convert_1_to_2_generic(shape_shifter1, serialized_msg);
+  ASSERT_TRUE(success);
+
+  // The serialized data from matching ROS2 message seems to contain padding between
+  // values.  This padding might have random values so the serialized data
+  // might different even though the message fields all have the same value.
+  // However ROS1 messages are "packed" so there is no space for garbage data.
+  // Since convert_1_to_2_generic is tested indepedently elsewere, use it to
+  // to test convert_1_to_2_generic
+  const bool latched = false;
+  topic_tools::ShapeShifter shape_shifter2;
+  success = this->test.factory.convert_2_to_1_generic(serialized_msg, shape_shifter2, latched);
+  ASSERT_TRUE(success);
+
+  // Buffer1 and Buffer2 should match in size and contents
+  // ROS1 serialization this should always be true because there is no padding or empty space
+  // left in any output buffers
+  ASSERT_EQ(shape_shifter1.size(), shape_shifter2.size());
+
+  unsigned mismatch_count = 0;
+  const unsigned mismatch_count_limit = 10;
+  for (size_t idx = 0; idx < shape_shifter1.size(); ++idx)
+  {
+    int val1 = ros1_bridge::get_data(shape_shifter1)[idx];
+    int val2 = ros1_bridge::get_data(shape_shifter2)[idx];
+    EXPECT_EQ(val1, val2) << " idx=" << idx << " of " << shape_shifter1.size();
     if (val1 != val2)
     {
       ++mismatch_count;

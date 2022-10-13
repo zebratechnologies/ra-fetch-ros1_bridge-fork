@@ -29,6 +29,7 @@
 #include "rcutils/logging_macros.h"
 
 #include "ros1_bridge/factory_interface.hpp"
+#include "ros1_bridge/shape_shifter_access.hpp"
 
 namespace ros1_bridge
 {
@@ -329,17 +330,13 @@ public:
       return false;
     }
 
-    // Shape shifter doesn't allow direct access to internal buffer of serialized data
-    // so write out buffer to another buffer first
-    // TODO(make custom "stream" class to work-around this without needing an extra copy
-    const uint32_t length = shape_shifter.size();
-    std::vector<uint8_t> buffer(length);
-    ros::serialization::OStream out_stream(buffer.data(), length);
-    shape_shifter.write(out_stream);
-
     // Deserialize to a ROS1 message
     ROS1_T ros1_typed_msg;
-    ros::serialization::IStream in_stream(buffer.data(), length);
+    // Both IStream and OStream inherits their functionality from Stream
+    // So IStream needs a non-const data reference to data
+    // However deserialization function probably shouldn't modify data they are serializing from
+    uint8_t* shape_shifter_data = const_cast<uint8_t*>(get_data(shape_shifter));
+    ros::serialization::IStream in_stream(shape_shifter_data, shape_shifter.size());
     ros::serialization::deserialize(in_stream, ros1_typed_msg);
 
     // Call convert_1_to_2
